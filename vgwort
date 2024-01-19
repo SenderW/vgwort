@@ -1,0 +1,47 @@
+import requests
+from bs4 import BeautifulSoup, Tag
+import pyperclip
+
+def remove_elements_by_class(soup, class_list):
+    for class_name in class_list:
+        for element in soup.find_all(class_=class_name):
+            element.decompose()
+
+# Klassen, die herausgefiltert werden sollen
+classes_to_filter = ["widget-area secondary", "image-source", "posted-on"]
+
+while True:
+    # Eingabeaufforderung für die URL
+    url = input("Bitte geben Sie eine URL ein oder drücken Sie Enter, um das Programm zu beenden: ")
+    
+    # Beenden des Programms, wenn keine Eingabe erfolgt
+    if not url:
+        break
+
+    # Abrufen der Webseite
+    response = requests.get(url)
+    response.raise_for_status()
+
+    # Parsen des HTML-Inhalts
+    soup = BeautifulSoup(response.content, 'html.parser')
+
+    # Entfernen der Elemente mit den angegebenen Klassen
+    remove_elements_by_class(soup, classes_to_filter)
+
+    # Extrahieren des Inhalts zwischen <h1> und der Klasse "rmp-widgets-container" oder "site-footer"
+    content = soup.find('h1')
+    text = []
+    stop_classes = ["rmp-widgets-container", "site-footer"]
+    while content:
+        if isinstance(content, Tag) and any(content.has_attr("class") and stop_class in content["class"] for stop_class in stop_classes):
+            break
+        if content.name is None or content.name == 'p':
+            text.append(content.get_text().strip())
+        content = content.next_element
+
+    # Zusammenführen des extrahierten Textes
+    extracted_text = ' '.join(text)
+
+    # Kopieren in die Zwischenablage und Anzahl der Zeichen ausgeben
+    pyperclip.copy(extracted_text)
+    print(f"Inhalt kopiert. Anzahl der Zeichen: {len(extracted_text)}")
